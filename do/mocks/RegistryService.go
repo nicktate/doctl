@@ -108,6 +108,21 @@ func (mr *MockRegistryServiceMockRecorder) ListRepositoryTags(arg0 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRepositoryTags", reflect.TypeOf((*MockRegistryService)(nil).ListRepositoryTags), arg0)
 }
 
+// ListRepositories mocks base method.
+func (m *MockRegistryService) ListRepositories(arg0 *godo.RepositoryListRequest) ([]do.Repository, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRepositories", arg0)
+	ret0, _ := ret[0].([]do.Repository)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRepositories indicates an expected call of ListRepositories.
+func (mr *MockRegistryServiceMockRecorder) ListRepositories(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRepositories", reflect.TypeOf((*MockRegistryService)(nil).ListRepositories), arg0)
+}
+
 // Endpoint mocks base method.
 func (m *MockRegistryService) Endpoint() string {
 	m.ctrl.T.Helper()

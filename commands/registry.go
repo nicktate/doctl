@@ -95,10 +95,22 @@ func Repository() *Command {
 			Use:     "repository",
 			Aliases: []string{"repo", "r"},
 			Short:   "[Beta] Display commands for working with repositories in a container registry",
-			Long:    "[Beta] The subcommands of `doctl registry repository` list repositories in a registry.",
+			Long:    "[Beta] The subcommands of `doctl registry repository` help you command actions related to a repository.",
 			Hidden:  true,
 		},
 	}
+
+	listRepositoriesDesc := `
+	This command retrieves information about repositories in a registry, including:
+
+	- The repository name
+	- The latest tag of the repository
+	- The compressed size for the latest tag
+	- The manifest digest for the latest tag
+	- The last updated timestamp
+	`
+	CmdBuilder(cmd, RunListRepositories, "list",
+		"List repositories for a container registry", listRepositoriesDesc, Writer, aliasOpt("ls"), displayerType(&displayers.Repository{}))
 
 	listRepositoryTagsDesc := `
 	This command retrieves information about tags in a repository, including:
@@ -108,6 +120,7 @@ func Repository() *Command {
 	- The manifest digest 
 	- The last updated timestamp
 	`
+
 	CmdBuilder(cmd, RunListRepositoryTags, "list-tags <repository>",
 		"List tags for a repository in a container registry", listRepositoryTagsDesc, Writer, aliasOpt("lt"), displayerType(&displayers.RepositoryTag{}))
 
@@ -154,6 +167,23 @@ func RunRegistryDelete(c *CmdConfig) error {
 	}
 
 	return c.Registry().Delete()
+}
+
+// RunListRepositories lists repositories for the registry
+func RunListRepositories(c *CmdConfig) error {
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	registries, err := c.Registry().ListRepositories(&godo.RepositoryListRequest{
+		RegistryName: registry.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	return displayRepositories(c, registries...)
 }
 
 // RunListRepositoryTags lists tags for the repository in a registry
@@ -317,6 +347,13 @@ func displayRegistries(c *CmdConfig, registries ...do.Registry) error {
 func displayRepositoryTags(c *CmdConfig, tags ...do.RepositoryTag) error {
 	item := &displayers.RepositoryTag{
 		Tags: tags,
+	}
+	return c.Display(item)
+}
+
+func displayRepositories(c *CmdConfig, repositories ...do.Repository) error {
+	item := &displayers.Repository{
+		Repositories: repositories,
 	}
 	return c.Display(item)
 }
