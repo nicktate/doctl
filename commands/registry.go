@@ -61,6 +61,8 @@ func Registry() *Command {
 		"Delete a container registry", deleteRegDesc, Writer, aliasOpt("d", "del", "rm"))
 	AddBoolFlag(cmdRunRegistryDelete, doctl.ArgForce, doctl.ArgShortForce, false, "Force registry delete")
 
+	cmd.AddCommand(Repository())
+
 	loginRegDesc := "This command logs in Docker so that pull and push commands to your private container registry will be authenticated."
 	CmdBuilder(cmd, RunRegistryLogin, "login", "Log in Docker to a container registry",
 		loginRegDesc, Writer)
@@ -86,7 +88,24 @@ Redirect the command's output to a file to save the manifest for later use or pi
 	return cmd
 }
 
-// Registry
+// Repository creates the repository sub-command
+func Repository() *Command {
+	cmd := &Command{
+		Command: &cobra.Command{
+			Use:     "repository",
+			Aliases: []string{"repo", "r"},
+			Short:   "[Beta] Display commands for working with repositories in a container registry",
+			Long:    "[Beta] The subcommands of `doctl registry repository` list repositories in a registry.",
+			Hidden:  true,
+		},
+	}
+
+	listRepositoryTagsDesc := "This command lists all the tags for a given repository."
+	CmdBuilder(cmd, RunListRepositoryTags, "list-tags <repository>",
+		"List tags for a repository in a container registry", listRepositoryTagsDesc, Writer, aliasOpt("lt"))
+
+	return cmd
+}
 
 // RunRegistryCreate creates a registry
 func RunRegistryCreate(c *CmdConfig) error {
@@ -128,6 +147,28 @@ func RunRegistryDelete(c *CmdConfig) error {
 	}
 
 	return c.Registry().Delete()
+}
+
+// RunListRepositoryTags lists tags for the repository in a registry
+func RunListRepositoryTags(c *CmdConfig) error {
+	if len(c.Args) != 1 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	tags, err := c.Registry().ListRepositoryTags(&godo.RepositoryListTagsRequest{
+		RegistryName: registry.Name,
+		Repository:   c.Args[0],
+	})
+	if err != nil {
+		return err
+	}
+
+	return displayRepositoryTags(c, tags...)
 }
 
 // store execCommand in a variable. Lets us override it while testing
@@ -262,6 +303,13 @@ func RunRegistryLogout(c *CmdConfig) error {
 func displayRegistries(c *CmdConfig, registries ...do.Registry) error {
 	item := &displayers.Registry{
 		Registries: registries,
+	}
+	return c.Display(item)
+}
+
+func displayRepositoryTags(c *CmdConfig, tags ...do.RepositoryTag) error {
+	item := &displayers.RepositoryTag{
+		Tags: tags,
 	}
 	return c.Display(item)
 }

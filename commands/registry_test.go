@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/digitalocean/doctl"
 	"github.com/digitalocean/doctl/do"
@@ -31,8 +32,20 @@ import (
 )
 
 var (
-	testRegistryName      = "container-registry"
-	testRegistry          = do.Registry{Registry: &godo.Registry{Name: testRegistryName}}
+	testRegistryName  = "container-registry"
+	testRegistry      = do.Registry{Registry: &godo.Registry{Name: testRegistryName}}
+	testRepoName      = "test-repository"
+	testRepositoryTag = do.RepositoryTag{
+		RepositoryTag: &godo.RepositoryTag{
+			RegistryName:        testRegistryName,
+			Repository:          testRepoName,
+			Tag:                 "tag",
+			ManifestDigest:      "sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b",
+			CompressedSizeBytes: 50,
+			SizeBytes:           100,
+			UpdatedAt:           time.Now(),
+		},
+	}
 	testDockerCredentials = &godo.DockerCredentials{
 		// the base64 string is "username:password"
 		DockerConfigJSON: []byte(`{"auths":{"hostname":{"auth":"dXNlcm5hbWU6cGFzc3dvcmQ="}}}`),
@@ -42,7 +55,13 @@ var (
 func TestRegistryCommand(t *testing.T) {
 	cmd := Registry()
 	assert.NotNil(t, cmd)
-	assertCommandNames(t, cmd, "create", "get", "delete", "login", "logout", "kubernetes-manifest")
+	assertCommandNames(t, cmd, "create", "get", "delete", "login", "logout", "kubernetes-manifest", "repository")
+}
+
+func TestRepositoryCommand(t *testing.T) {
+	cmd := Repository()
+	assert.NotNil(t, cmd)
+	assertCommandNames(t, cmd, "list-tags")
 }
 
 func TestRegistryCreate(t *testing.T) {
@@ -61,6 +80,20 @@ func TestRegistryGet(t *testing.T) {
 		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
 
 		err := RunRegistryGet(config)
+		assert.NoError(t, err)
+	})
+}
+
+func TestRepositoryListTags(t *testing.T) {
+	withTestClient(t, func(config *CmdConfig, tm *tcMocks) {
+		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
+		tm.registry.EXPECT().ListRepositoryTags(&godo.RepositoryListTagsRequest{
+			RegistryName: testRepositoryTag.RegistryName,
+			Repository:   testRepositoryTag.Repository,
+		}).Return([]do.RepositoryTag{testRepositoryTag}, nil)
+		config.Args = append(config.Args, testRepositoryTag.Repository)
+
+		err := RunListRepositoryTags(config)
 		assert.NoError(t, err)
 	})
 }

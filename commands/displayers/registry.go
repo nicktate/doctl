@@ -57,3 +57,51 @@ func (r *Registry) KV() []map[string]interface{} {
 
 	return out
 }
+
+type RepositoryTag struct {
+	Tags []do.RepositoryTag
+}
+
+var _ Displayable = &RepositoryTag{}
+
+func (r *RepositoryTag) JSON(out io.Writer) error {
+	return writeJSON(r.Tags, out)
+}
+
+func (r *RepositoryTag) Cols() []string {
+	return []string{
+		"Repository",
+		"Tag",
+		"CompressedSizeBytes",
+		"UpdatedAt",
+		"ManifestDigest",
+	}
+}
+
+func (r *RepositoryTag) ColMap() map[string]string {
+	return map[string]string{
+		"Repository":          "Repository",
+		"Tag":                 "Tag",
+		"CompressedSizeBytes": "Compressed Size",
+		"UpdatedAt":           "Updated At",
+		"ManifestDigest":      "Manifest Digest",
+	}
+}
+
+func (r *RepositoryTag) KV() []map[string]interface{} {
+	out := []map[string]interface{}{}
+
+	for _, tag := range r.Tags {
+		m := map[string]interface{}{
+			"Repository":          tag.Repository,
+			"Tag":                 tag.Tag,
+			"CompressedSizeBytes": BytesToHumanReadibleUnit(tag.CompressedSizeBytes),
+			"UpdatedAt":           tag.UpdatedAt,
+			"ManifestDigest":      tag.ManifestDigest,
+		}
+
+		out = append(out, m)
+	}
+
+	return out
+}
