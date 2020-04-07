@@ -14,6 +14,7 @@ limitations under the License.
 package displayers
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/digitalocean/doctl/do"
@@ -50,6 +51,54 @@ func (r *Registry) KV() []map[string]interface{} {
 		m := map[string]interface{}{
 			"Name":     reg.Name,
 			"Endpoint": reg.Endpoint(),
+		}
+
+		out = append(out, m)
+	}
+
+	return out
+}
+
+type Repository struct {
+	Repositories []do.Repository
+}
+
+var _ Displayable = &Repository{}
+
+func (r *Repository) JSON(out io.Writer) error {
+	return writeJSON(r.Repositories, out)
+}
+
+func (r *Repository) Cols() []string {
+	return []string{
+		"Name",
+		"LatestTag",
+		"CompressedSizeBytes",
+		"ManifestDigest",
+		"UpdatedAt",
+	}
+}
+
+func (r *Repository) ColMap() map[string]string {
+	return map[string]string{
+		"Name":                "Name",
+		"LatestTag":           "Latest Tag",
+		"CompressedSizeBytes": "Compressed Size",
+		"ManifestDigest":      "Manifest Digest",
+		"UpdatedAt":           "Updated At",
+	}
+}
+
+func (r *Repository) KV() []map[string]interface{} {
+	out := []map[string]interface{}{}
+
+	for _, reg := range r.Repositories {
+		m := map[string]interface{}{
+			"Name":                reg.Name,
+			"LatestTag":           reg.LatestTag.Tag,
+			"CompressedSizeBytes": BytesToHumanReadibleUnit(reg.LatestTag.CompressedSizeBytes),
+			"ManifestDigest":      fmt.Sprintf("%s...", reg.LatestTag.ManifestDigest[0:15]),
+			"UpdatedAt":           reg.LatestTag.UpdatedAt,
 		}
 
 		out = append(out, m)

@@ -31,8 +31,16 @@ import (
 )
 
 var (
-	testRegistryName      = "container-registry"
-	testRegistry          = do.Registry{Registry: &godo.Registry{Name: testRegistryName}}
+	testRegistryName = "container-registry"
+	testRegistry     = do.Registry{Registry: &godo.Registry{Name: testRegistryName}}
+	testRepoName     = "test-repository"
+	testRepository   = do.Repository{
+		Repository: &godo.Repository{
+			RegistryName: testRegistryName,
+			Name:         testRegistryName,
+			LatestTag:    &godo.RepositoryTag{},
+		},
+	}
 	testDockerCredentials = &godo.DockerCredentials{
 		// the base64 string is "username:password"
 		DockerConfigJSON: []byte(`{"auths":{"hostname":{"auth":"dXNlcm5hbWU6cGFzc3dvcmQ="}}}`),
@@ -42,7 +50,7 @@ var (
 func TestRegistryCommand(t *testing.T) {
 	cmd := Registry()
 	assert.NotNil(t, cmd)
-	assertCommandNames(t, cmd, "create", "get", "delete", "login", "logout", "kubernetes-manifest")
+	assertCommandNames(t, cmd, "create", "get", "delete", "login", "logout", "kubernetes-manifest", "repository")
 }
 
 func TestRegistryCreate(t *testing.T) {
@@ -61,6 +69,18 @@ func TestRegistryGet(t *testing.T) {
 		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
 
 		err := RunRegistryGet(config)
+		assert.NoError(t, err)
+	})
+}
+
+func TestRepositoryList(t *testing.T) {
+	withTestClient(t, func(config *CmdConfig, tm *tcMocks) {
+		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
+		tm.registry.EXPECT().ListRepositories(&godo.RepositoryListRequest{
+			RegistryName: testRepository.RegistryName,
+		}).Return([]do.Repository{testRepository}, nil)
+
+		err := RunListRepositories(config)
 		assert.NoError(t, err)
 	})
 }

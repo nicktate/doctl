@@ -61,6 +61,8 @@ func Registry() *Command {
 		"Delete a container registry", deleteRegDesc, Writer, aliasOpt("d", "del", "rm"))
 	AddBoolFlag(cmdRunRegistryDelete, doctl.ArgForce, doctl.ArgShortForce, false, "Force registry delete")
 
+	cmd.AddCommand(Repository())
+
 	loginRegDesc := "This command logs in Docker so that pull and push commands to your private container registry will be authenticated."
 	CmdBuilder(cmd, RunRegistryLogin, "login", "Log in Docker to a container registry",
 		loginRegDesc, Writer)
@@ -86,7 +88,24 @@ Redirect the command's output to a file to save the manifest for later use or pi
 	return cmd
 }
 
-// Registry
+// Repository creates the repository sub-command
+func Repository() *Command {
+	cmd := &Command{
+		Command: &cobra.Command{
+			Use:     "repository",
+			Aliases: []string{"repo", "r"},
+			Short:   "[Beta] Display commands for working with repositories in a container registry",
+			Long:    "[Beta] The subcommands of `doctl registry repository` help you command actions related to a repository.",
+			Hidden:  true,
+		},
+	}
+
+	listRepositoriesDesc := "This command lists all the repositories for a given registry."
+	CmdBuilder(cmd, RunListRepositories, "list",
+		"List repositories for a container registry", listRepositoriesDesc, Writer, aliasOpt("l"))
+
+	return cmd
+}
 
 // RunRegistryCreate creates a registry
 func RunRegistryCreate(c *CmdConfig) error {
@@ -128,6 +147,23 @@ func RunRegistryDelete(c *CmdConfig) error {
 	}
 
 	return c.Registry().Delete()
+}
+
+// RunListRepositories lists repositories for the registry
+func RunListRepositories(c *CmdConfig) error {
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	registries, err := c.Registry().ListRepositories(&godo.RepositoryListRequest{
+		RegistryName: registry.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	return displayRepositories(c, registries...)
 }
 
 // store execCommand in a variable. Lets us override it while testing
@@ -262,6 +298,13 @@ func RunRegistryLogout(c *CmdConfig) error {
 func displayRegistries(c *CmdConfig, registries ...do.Registry) error {
 	item := &displayers.Registry{
 		Registries: registries,
+	}
+	return c.Display(item)
+}
+
+func displayRepositories(c *CmdConfig, repositories ...do.Repository) error {
+	item := &displayers.Repository{
+		Repositories: repositories,
 	}
 	return c.Display(item)
 }
