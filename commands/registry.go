@@ -120,9 +120,80 @@ func Repository() *Command {
 	- The manifest digest 
 	- The last updated timestamp
 	`
-
 	CmdBuilder(cmd, RunListRepositoryTags, "list-tags <repository>",
 		"List tags for a repository in a container registry", listRepositoryTagsDesc, Writer, aliasOpt("lt"), displayerType(&displayers.RepositoryTag{}))
+
+	deleteTagDesc := "This command permanently deletes a repository tag."
+	cmdRunRepositoryDeleteTag := CmdBuilder(
+		cmd,
+		RunRepositoryDeleteTag,
+		"delete-tag <repository> <tag>",
+		"Delete a container repository tag",
+		deleteTagDesc,
+		Writer,
+		aliasOpt("dt"),
+	)
+	AddBoolFlag(cmdRunRepositoryDeleteTag, doctl.ArgForce, doctl.ArgShortForce, false, "Force tag deletion")
+
+	bulkDeleteTagsDesc := "This command permanently deletes one or more repository tags."
+	cmdRunRepositoryBulkDeleteTags := CmdBuilder(
+		cmd,
+		RunRepositoryBulkDeleteTags,
+		"bulk-delete-tags <repository> <tag>...",
+		"Bulk delete one or more container repository tags",
+		bulkDeleteTagsDesc,
+		Writer,
+		aliasOpt("bdt"),
+	)
+	AddBoolFlag(cmdRunRepositoryBulkDeleteTags, doctl.ArgForce, doctl.ArgShortForce, false, "Force tag deletion")
+
+	tagDeletionStatusDesc := "This command retrieves the deletion status information from one or more tags in a bulk delete request."
+	CmdBuilder(
+		cmd,
+		RunRepositoryTagDeletionStatus,
+		"tag-deletion-status <repository> <tag>...",
+		"Get status of a container repository tag deletion",
+		tagDeletionStatusDesc,
+		Writer,
+		aliasOpt("tds"),
+		displayerType(&displayers.DeletionStatus{}),
+	)
+
+	deleteManifestDesc := "This command permanently deletes one ore more repository manifests."
+	cmdRunRepositoryDeleteManifest := CmdBuilder(
+		cmd,
+		RunRepositoryDeleteManifest,
+		"delete-manifest <repository> <manifest-digest>",
+		"Delete a container repository manifest",
+		deleteManifestDesc,
+		Writer,
+		aliasOpt("dm"),
+	)
+	AddBoolFlag(cmdRunRepositoryDeleteManifest, doctl.ArgForce, doctl.ArgShortForce, false, "Force manifest deletion")
+
+	bulkDeleteManifestsDesc := "This command permanently deletes one or more repository manifests."
+	cmdRunRepositoryBulkDeleteManifests := CmdBuilder(
+		cmd,
+		RunRepositoryBulkDeleteManifests,
+		"bulk-delete-manifests <repository> <manifest-digest>...",
+		"Bulk delete one or more container repository manifests",
+		bulkDeleteManifestsDesc,
+		Writer,
+		aliasOpt("bdm"),
+	)
+	AddBoolFlag(cmdRunRepositoryBulkDeleteManifests, doctl.ArgForce, doctl.ArgShortForce, false, "Force manifest deletion")
+
+	manifestDeletionStatusDesc := "This command retrieves the deletion status information from one or more manifests in a bulk delete request."
+	CmdBuilder(
+		cmd,
+		RunRepositoryTagDeletionStatus,
+		"manifest-deletion-status <repository> <manifest-digest>...",
+		"Get status of a container repository manifest deletion",
+		manifestDeletionStatusDesc,
+		Writer,
+		aliasOpt("mds"),
+		displayerType(&displayers.DeletionStatus{}),
+	)
 
 	return cmd
 }
@@ -176,14 +247,12 @@ func RunListRepositories(c *CmdConfig) error {
 		return fmt.Errorf("failed to get registry: %w", err)
 	}
 
-	registries, err := c.Registry().ListRepositories(&godo.RepositoryListRequest{
-		RegistryName: registry.Name,
-	})
+	repositories, err := c.Registry().ListRepositories(registry.Name)
 	if err != nil {
 		return err
 	}
 
-	return displayRepositories(c, registries...)
+	return displayRepositories(c, repositories...)
 }
 
 // RunListRepositoryTags lists tags for the repository in a registry
@@ -197,15 +266,174 @@ func RunListRepositoryTags(c *CmdConfig) error {
 		return fmt.Errorf("failed to get registry: %w", err)
 	}
 
-	tags, err := c.Registry().ListRepositoryTags(&godo.RepositoryListTagsRequest{
-		RegistryName: registry.Name,
-		Repository:   c.Args[0],
-	})
+	tags, err := c.Registry().ListRepositoryTags(registry.Name, c.Args[0])
 	if err != nil {
 		return err
 	}
 
 	return displayRepositoryTags(c, tags...)
+}
+
+// RunRepositoryDeleteTag deletes the repository tag
+func RunRepositoryDeleteTag(c *CmdConfig) error {
+	force, err := c.Doit.GetBool(c.NS, doctl.ArgForce)
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args) != 2 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	if !force && AskForConfirm("delete repository tag") != nil {
+		return fmt.Errorf("operation aborted")
+	}
+
+	repository := c.Args[0]
+	tag := c.Args[1]
+
+	return c.Registry().DeleteTag(registry.Name, repository, tag)
+}
+
+// RunRepositoryBulkDeleteTags deletes one or more repository tags
+func RunRepositoryBulkDeleteTags(c *CmdConfig) error {
+	force, err := c.Doit.GetBool(c.NS, doctl.ArgForce)
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args) < 2 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	repository := c.Args[0]
+	tags := c.Args[1:]
+
+	if !force && AskForConfirm(fmt.Sprintf("delete %d repository tag(s)", len(tags))) != nil {
+		return fmt.Errorf("operation aborted")
+	}
+
+	return c.Registry().BulkDeleteTags(registry.Name, repository, &godo.RepositoryBulkDeleteTagsRequest{
+		Tags: tags,
+	})
+}
+
+// RunRepositoryTagDeletionStatus gets the status of a tag deletion.
+func RunRepositoryTagDeletionStatus(c *CmdConfig) error {
+	if len(c.Args) != 2 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	repository := c.Args[0]
+	references := c.Args[1:]
+	var statuses []do.DeletionStatus
+
+	for _, ref := range references {
+		status, err := c.Registry().GetTagDeletionStatus(registry.Name, repository, ref)
+		if err != nil {
+			return err
+		}
+
+		statuses = append(statuses, *status)
+	}
+
+	return displayDeletionStatuses(c, statuses...)
+}
+
+// RunRepositoryDeleteManifest deletes the repository manifest by digest
+func RunRepositoryDeleteManifest(c *CmdConfig) error {
+	force, err := c.Doit.GetBool(c.NS, doctl.ArgForce)
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args) != 2 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	if !force && AskForConfirm("delete repository manifest by digest") != nil {
+		return fmt.Errorf("operation aborted")
+	}
+
+	repository := c.Args[0]
+	digest := c.Args[1]
+
+	return c.Registry().DeleteManifest(registry.Name, repository, digest)
+}
+
+// RunRepositoryBulkDeleteManifests deletes one or more repository tags
+func RunRepositoryBulkDeleteManifests(c *CmdConfig) error {
+	force, err := c.Doit.GetBool(c.NS, doctl.ArgForce)
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args) < 2 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	repository := c.Args[0]
+	digests := c.Args[1:]
+
+	if !force && AskForConfirm(fmt.Sprintf("delete %d repository manifest(s)", len(digests))) != nil {
+		return fmt.Errorf("operation aborted")
+	}
+
+	return c.Registry().BulkDeleteManifests(registry.Name, repository, &godo.RepositoryBulkDeleteManifestsRequest{
+		ManifestDigests: digests,
+	})
+}
+
+// RunRepositoryManifestDeletionStatus gets the status of a tag deletion.
+func RunRepositoryManifestDeletionStatus(c *CmdConfig) error {
+	if len(c.Args) != 2 {
+		return doctl.NewMissingArgsErr(c.NS)
+	}
+
+	registry, err := c.Registry().Get()
+	if err != nil {
+		return fmt.Errorf("failed to get registry: %w", err)
+	}
+
+	repository := c.Args[0]
+	references := c.Args[1:]
+	var statuses []do.DeletionStatus
+
+	for _, ref := range references {
+		status, err := c.Registry().GetManifestDeletionStatus(registry.Name, repository, ref)
+		if err != nil {
+			return err
+		}
+
+		statuses = append(statuses, *status)
+	}
+
+	return displayDeletionStatuses(c, statuses...)
 }
 
 // store execCommand in a variable. Lets us override it while testing
@@ -354,6 +582,13 @@ func displayRepositoryTags(c *CmdConfig, tags ...do.RepositoryTag) error {
 func displayRepositories(c *CmdConfig, repositories ...do.Repository) error {
 	item := &displayers.Repository{
 		Repositories: repositories,
+	}
+	return c.Display(item)
+}
+
+func displayDeletionStatuses(c *CmdConfig, statuses ...do.DeletionStatus) error {
+	item := &displayers.DeletionStatus{
+		Statuses: statuses,
 	}
 	return c.Display(item)
 }

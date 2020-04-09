@@ -68,7 +68,7 @@ func TestRegistryCommand(t *testing.T) {
 func TestRepositoryCommand(t *testing.T) {
 	cmd := Repository()
 	assert.NotNil(t, cmd)
-	assertCommandNames(t, cmd, "list", "list-tags")
+	assertCommandNames(t, cmd, "list", "list-tags", "delete-manifest", "delete-tag")
 }
 
 func TestRegistryCreate(t *testing.T) {
@@ -94,9 +94,7 @@ func TestRegistryGet(t *testing.T) {
 func TestRepositoryList(t *testing.T) {
 	withTestClient(t, func(config *CmdConfig, tm *tcMocks) {
 		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
-		tm.registry.EXPECT().ListRepositories(&godo.RepositoryListRequest{
-			RegistryName: testRepository.RegistryName,
-		}).Return([]do.Repository{testRepository}, nil)
+		tm.registry.EXPECT().ListRepositories(testRepository.RegistryName).Return([]do.Repository{testRepository}, nil)
 
 		err := RunListRepositories(config)
 		assert.NoError(t, err)
@@ -106,13 +104,44 @@ func TestRepositoryList(t *testing.T) {
 func TestRepositoryListTags(t *testing.T) {
 	withTestClient(t, func(config *CmdConfig, tm *tcMocks) {
 		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
-		tm.registry.EXPECT().ListRepositoryTags(&godo.RepositoryListTagsRequest{
-			RegistryName: testRepositoryTag.RegistryName,
-			Repository:   testRepositoryTag.Repository,
-		}).Return([]do.RepositoryTag{testRepositoryTag}, nil)
+		tm.registry.EXPECT().ListRepositoryTags(
+			testRepositoryTag.RegistryName,
+			testRepositoryTag.Repository,
+		).Return([]do.RepositoryTag{testRepositoryTag}, nil)
 		config.Args = append(config.Args, testRepositoryTag.Repository)
 
 		err := RunListRepositoryTags(config)
+		assert.NoError(t, err)
+	})
+}
+func TestRepositoryDeleteTag(t *testing.T) {
+	withTestClient(t, func(config *CmdConfig, tm *tcMocks) {
+		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
+		tm.registry.EXPECT().DeleteTag(
+			testRepositoryTag.RegistryName,
+			testRepositoryTag.Repository,
+			testRepositoryTag.Tag,
+		).Return(nil)
+		config.Doit.Set(config.NS, doctl.ArgForce, true)
+		config.Args = append(config.Args, testRepositoryTag.Repository, testRepositoryTag.Tag)
+
+		err := RunRepositoryDeleteTag(config)
+		assert.NoError(t, err)
+	})
+}
+
+func TestRepositoryDeleteManifest(t *testing.T) {
+	withTestClient(t, func(config *CmdConfig, tm *tcMocks) {
+		tm.registry.EXPECT().Get().Return(&testRegistry, nil)
+		tm.registry.EXPECT().DeleteManifest(
+			testRepositoryTag.RegistryName,
+			testRepositoryTag.Repository,
+			testRepositoryTag.ManifestDigest,
+		).Return(nil)
+		config.Doit.Set(config.NS, doctl.ArgForce, true)
+		config.Args = append(config.Args, testRepositoryTag.Repository, testRepositoryTag.ManifestDigest)
+
+		err := RunRepositoryDeleteManifest(config)
 		assert.NoError(t, err)
 	})
 }

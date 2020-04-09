@@ -38,6 +38,13 @@ type RepositoryTag struct {
 	*godo.RepositoryTag
 }
 
+// DeletionStatus wraps a godo DeletionStatus
+type DeletionStatus struct {
+	Repository string
+	Reference  string
+	*godo.DeletionStatus
+}
+
 // Endpoint returns the registry endpoint
 func (r *Registry) Endpoint() string {
 	return fmt.Sprintf("%s/%s", RegistryHostname, r.Registry.Name)
@@ -49,8 +56,14 @@ type RegistryService interface {
 	Create(*godo.RegistryCreateRequest) (*Registry, error)
 	Delete() error
 	DockerCredentials(*godo.RegistryDockerCredentialsRequest) (*godo.DockerCredentials, error)
-	ListRepositoryTags(*godo.RepositoryListTagsRequest) ([]RepositoryTag, error)
-	ListRepositories(*godo.RepositoryListRequest) ([]Repository, error)
+	ListRepositoryTags(string, string) ([]RepositoryTag, error)
+	ListRepositories(string) ([]Repository, error)
+	DeleteTag(string, string, string) error
+	BulkDeleteTags(string, string, *godo.RepositoryBulkDeleteTagsRequest) error
+	GetTagDeletionStatus(string, string, string) (*DeletionStatus, error)
+	DeleteManifest(string, string, string) error
+	BulkDeleteManifests(string, string, *godo.RepositoryBulkDeleteManifestsRequest) error
+	GetManifestDeletionStatus(string, string, string) (*DeletionStatus, error)
 	Endpoint() string
 }
 
@@ -101,9 +114,9 @@ func (rs *registryService) DockerCredentials(request *godo.RegistryDockerCredent
 	return dockerConfig, nil
 }
 
-func (rs *registryService) ListRepositories(request *godo.RepositoryListRequest) ([]Repository, error) {
+func (rs *registryService) ListRepositories(registry string) ([]Repository, error) {
 	f := func(opt *godo.ListOptions) ([]interface{}, *godo.Response, error) {
-		list, resp, err := rs.client.Registry.ListRepositories(rs.ctx, request, opt)
+		list, resp, err := rs.client.Registry.ListRepositories(rs.ctx, registry, opt)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -130,9 +143,9 @@ func (rs *registryService) ListRepositories(request *godo.RepositoryListRequest)
 	return list, nil
 }
 
-func (rs *registryService) ListRepositoryTags(request *godo.RepositoryListTagsRequest) ([]RepositoryTag, error) {
+func (rs *registryService) ListRepositoryTags(registry, repository string) ([]RepositoryTag, error) {
 	f := func(opt *godo.ListOptions) ([]interface{}, *godo.Response, error) {
-		list, resp, err := rs.client.Registry.ListRepositoryTags(rs.ctx, request, opt)
+		list, resp, err := rs.client.Registry.ListRepositoryTags(rs.ctx, registry, repository, opt)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -157,6 +170,44 @@ func (rs *registryService) ListRepositoryTags(request *godo.RepositoryListTagsRe
 	}
 
 	return list, nil
+}
+
+func (rs *registryService) DeleteTag(registry, repository, tag string) error {
+	_, err := rs.client.Registry.DeleteTag(rs.ctx, registry, repository, tag)
+	return err
+}
+
+func (rs *registryService) BulkDeleteTags(registry, repository string, request *godo.RepositoryBulkDeleteTagsRequest) error {
+	_, err := rs.client.Registry.BulkDeleteTags(rs.ctx, registry, repository, request)
+	return err
+}
+
+func (rs *registryService) GetTagDeletionStatus(registry, repository, tag string) (*DeletionStatus, error) {
+	status, _, err := rs.client.Registry.GetTagDeletionStatus(rs.ctx, registry, repository, tag)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DeletionStatus{Repository: repository, Reference: tag, DeletionStatus: status}, nil
+}
+
+func (rs *registryService) DeleteManifest(registry, repository, digest string) error {
+	_, err := rs.client.Registry.DeleteManifest(rs.ctx, registry, repository, digest)
+	return err
+}
+
+func (rs *registryService) BulkDeleteManifests(registry, repository string, request *godo.RepositoryBulkDeleteManifestsRequest) error {
+	_, err := rs.client.Registry.BulkDeleteManifests(rs.ctx, registry, repository, request)
+	return err
+}
+
+func (rs *registryService) GetManifestDeletionStatus(registry, repository, digest string) (*DeletionStatus, error) {
+	status, _, err := rs.client.Registry.GetManifestDeletionStatus(rs.ctx, registry, repository, digest)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DeletionStatus{Repository: repository, Reference: digest, DeletionStatus: status}, nil
 }
 
 func (rs *registryService) Endpoint() string {

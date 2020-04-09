@@ -94,22 +94,22 @@ func (mr *MockRegistryServiceMockRecorder) DockerCredentials(arg0 interface{}) *
 }
 
 // ListRepositoryTags mocks base method.
-func (m *MockRegistryService) ListRepositoryTags(arg0 *godo.RepositoryListTagsRequest) ([]do.RepositoryTag, error) {
+func (m *MockRegistryService) ListRepositoryTags(arg0, arg1 string) ([]do.RepositoryTag, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListRepositoryTags", arg0)
+	ret := m.ctrl.Call(m, "ListRepositoryTags", arg0, arg1)
 	ret0, _ := ret[0].([]do.RepositoryTag)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListRepositoryTags indicates an expected call of ListRepositoryTags.
-func (mr *MockRegistryServiceMockRecorder) ListRepositoryTags(arg0 interface{}) *gomock.Call {
+func (mr *MockRegistryServiceMockRecorder) ListRepositoryTags(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRepositoryTags", reflect.TypeOf((*MockRegistryService)(nil).ListRepositoryTags), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRepositoryTags", reflect.TypeOf((*MockRegistryService)(nil).ListRepositoryTags), arg0, arg1)
 }
 
 // ListRepositories mocks base method.
-func (m *MockRegistryService) ListRepositories(arg0 *godo.RepositoryListRequest) ([]do.Repository, error) {
+func (m *MockRegistryService) ListRepositories(arg0 string) ([]do.Repository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListRepositories", arg0)
 	ret0, _ := ret[0].([]do.Repository)
@@ -121,6 +121,92 @@ func (m *MockRegistryService) ListRepositories(arg0 *godo.RepositoryListRequest)
 func (mr *MockRegistryServiceMockRecorder) ListRepositories(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRepositories", reflect.TypeOf((*MockRegistryService)(nil).ListRepositories), arg0)
+}
+
+// DeleteTag mocks base method.
+func (m *MockRegistryService) DeleteTag(arg0, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteTag", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTag indicates an expected call of DeleteTag.
+func (mr *MockRegistryServiceMockRecorder) DeleteTag(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTag", reflect.TypeOf((*MockRegistryService)(nil).DeleteTag), arg0, arg1, arg2)
+}
+
+// BulkDeleteTags mocks base method.
+func (m *MockRegistryService) BulkDeleteTags(arg0, arg1 string, arg2 *godo.RepositoryBulkDeleteTagsRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BulkDeleteTags", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BulkDeleteTags indicates an expected call of BulkDeleteTags.
+func (mr *MockRegistryServiceMockRecorder) BulkDeleteTags(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkDeleteTags", reflect.TypeOf((*MockRegistryService)(nil).BulkDeleteTags), arg0, arg1, arg2)
+}
+
+// GetTagDeletionStatus mocks base method.
+func (m *MockRegistryService) GetTagDeletionStatus(arg0, arg1, arg2 string) (*do.DeletionStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTagDeletionStatus", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*do.DeletionStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTagDeletionStatus indicates an expected call of GetTagDeletionStatus.
+func (mr *MockRegistryServiceMockRecorder) GetTagDeletionStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTagDeletionStatus", reflect.TypeOf((*MockRegistryService)(nil).GetTagDeletionStatus), arg0, arg1, arg2)
+}
+
+// DeleteManifest mocks base method.
+func (m *MockRegistryService) DeleteManifest(arg0, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteManifest", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteManifest indicates an expected call of DeleteManifest.
+func (mr *MockRegistryServiceMockRecorder) DeleteManifest(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteManifest", reflect.TypeOf((*MockRegistryService)(nil).DeleteManifest), arg0, arg1, arg2)
+}
+
+// BulkDeleteManifests mocks base method.
+func (m *MockRegistryService) BulkDeleteManifests(arg0, arg1 string, arg2 *godo.RepositoryBulkDeleteManifestsRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BulkDeleteManifests", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BulkDeleteManifests indicates an expected call of BulkDeleteManifests.
+func (mr *MockRegistryServiceMockRecorder) BulkDeleteManifests(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BulkDeleteManifests", reflect.TypeOf((*MockRegistryService)(nil).BulkDeleteManifests), arg0, arg1, arg2)
+}
+
+// GetManifestDeletionStatus mocks base method.
+func (m *MockRegistryService) GetManifestDeletionStatus(arg0, arg1, arg2 string) (*do.DeletionStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManifestDeletionStatus", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*do.DeletionStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManifestDeletionStatus indicates an expected call of GetManifestDeletionStatus.
+func (mr *MockRegistryServiceMockRecorder) GetManifestDeletionStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManifestDeletionStatus", reflect.TypeOf((*MockRegistryService)(nil).GetManifestDeletionStatus), arg0, arg1, arg2)
 }
 
 // Endpoint mocks base method.

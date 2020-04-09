@@ -150,3 +150,45 @@ func (r *Repository) KV() []map[string]interface{} {
 
 	return out
 }
+
+type DeletionStatus struct {
+	Statuses []do.DeletionStatus
+}
+
+var _ Displayable = &Repository{}
+
+func (d *DeletionStatus) JSON(out io.Writer) error {
+	return writeJSON(d.Statuses, out)
+}
+
+func (d *DeletionStatus) Cols() []string {
+	return []string{
+		"Reference",
+		"Pending",
+		"Error",
+	}
+}
+
+func (d *DeletionStatus) ColMap() map[string]string {
+	return map[string]string{
+		"Reference": "Reference",
+		"Pending":   "Pending",
+		"Error":     "Error",
+	}
+}
+
+func (d *DeletionStatus) KV() []map[string]interface{} {
+	out := []map[string]interface{}{}
+
+	for _, ds := range d.Statuses {
+		m := map[string]interface{}{
+			"Reference": ds.Reference,
+			"Pending":   ds.Pending,
+			"Error":     ds.Error,
+		}
+
+		out = append(out, m)
+	}
+
+	return out
+}
